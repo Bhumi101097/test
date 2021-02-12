@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "name": "Slug",
+  "main": "./sluger.js"
+}
