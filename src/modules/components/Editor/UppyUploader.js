@@ -6,6 +6,7 @@ import 'antd/dist/antd.css';
 import { Empty } from 'antd';
 import ReactDOMServer from 'react-dom/server';
 import React from 'react';
+import UppyConfig from '../Uppy/UppyUploader';
 const Uppy = require('@uppy/core');
 const Dashboard = require('@uppy/dashboard');
 const GoogleDrive = require('@uppy/google-drive');
@@ -276,95 +277,51 @@ class UppyUploader {
 
   getDashboard () {
     if(!this.data.url) {
-    const uppy = Uppy({
-      debug: true,
-      autoProceed: true,
-      restrictions: {
-        maxNumberOfFiles: 1,
-        minNumberOfFiles: 1,
-        allowedFileTypes: ['image/*'],
-      },
-      onBeforeUpload: (files) => {
-        const updatedFiles = {};
-        Object.keys(files).forEach((fileID) => {
-          updatedFiles[fileID] = {
-            ...files[fileID],
-            fileName: files[fileID].meta.name,
-            meta: {
-              ...files[fileID].meta,
-              name:
-                this.config.space_slug +
-                '/' +
-                new Date().getFullYear() +
-                '/' +
-                new Date().getMonth() +
-                '/' +
-                Date.now().toString() +
-                '_' +
-                files[fileID].meta.name,
-            },
-          };
-        });
-        return updatedFiles;
-      },
-    })
-      .use(Dashboard, {
-        trigger: '.UppyModalOpenerBtn',
-        inline: true,
-        target: '#' + this.nodes.wrapper.children[2].id,
-        replaceTargetContent: true,
-        showProgressDetails: true,
-        height: 470,
-        browserBackButtonClose: true,
-      })
+    const uppy = UppyConfig(this.config.space_slug,this.config.restrictions,this.config.autoProceed);
+    uppy.use(Dashboard, {
+          trigger: '.UppyModalOpenerBtn',
+          inline: true,
+          target: '#' + this.nodes.wrapper.children[2].id,
+          replaceTargetContent: true,
+          showProgressDetails: true,
+          height: 470,
+          browserBackButtonClose: true,
+        })
       .use(GoogleDrive, { target: Dashboard, companionUrl: window.REACT_APP_COMPANION_URL })
       .use(Url, { target: Dashboard, companionUrl: window.REACT_APP_COMPANION_URL })
       .use(AwsS3, { companionUrl: window.REACT_APP_COMPANION_URL });
-    uppy.on('file-added', (file) => {
-      const data = file.data;
-      const url = data.thumbnail ? data.thumbnail : URL.createObjectURL(data);
-      const image = new Image();
-      image.src = url;
-      image.onload = () => {
-        uppy.setFileMeta(file.id, { width: image.width, height: image.height });
-        URL.revokeObjectURL(url);
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(url);
-      };
-    });
-    uppy.on('complete', (result) => {
-      const successful = result.successful[0];
-      const { meta } = successful;
-      const upload = {};
-      upload['alt_text'] = meta.caption;
-      upload['caption'] = meta.caption;
-      upload['description'] = meta.caption;
-      upload['dimensions'] = `${meta.width}x${meta.height}`;
-      upload['file_size'] = successful.size;
-      upload['name'] = successful.fileName;
-      upload['slug'] = successful.response.body.key;
-      upload['title'] = meta.caption ? meta.caption : ' ';
-      upload['type'] = successful.meta.type;
-      upload['url'] = {};
-      upload['url']['raw'] = successful.uploadURL;
-      axios.defaults.headers.common['X-Space'] = this.config.space_id;
-      axios
-        .post(MEDIA_API, [upload])
-        .then((res) => {
-          this.data = res.data.nodes[0];
-          this.nodes.wrapper.children[2].style.display = 'none';
-          this.nodes.wrapper.children[1].style.display = 'none';
-          this.nodes.wrapper.children[0].src = this.data.url.proxy;
-
-        })
-        .catch((error) => {
-          this.api.notifier.show({
-            message: error.message,
-            style: 'error',
+        uppy.on('complete', (result) => {
+            const successful = result.successful[0];
+            const { meta } = successful;
+            const upload = {};
+            upload['alt_text'] = meta.caption;
+            upload['caption'] = meta.caption;
+            upload['description'] = meta.caption;
+            upload['dimensions'] = `${meta.width}x${meta.height}`;
+            upload['file_size'] = successful.size;
+            upload['name'] = successful.file_name;
+            upload['slug'] = successful.response.body.key;
+            upload['title'] = meta.caption ? meta.caption : ' ';
+            upload['type'] = successful.meta.type;
+            upload['url'] = {};
+            upload['url']['raw'] = successful.uploadURL;
+            axios.defaults.headers.common['X-Space'] = this.config.space_id;
+            axios
+              .post(MEDIA_API, [upload])
+              .then((res) => {
+                this.data = res.data.nodes[0];
+                this.nodes.wrapper.children[2].style.display = 'none';
+                this.nodes.wrapper.children[1].style.display = 'none';
+                this.nodes.wrapper.children[0].src = this.data.url.proxy;
+      
+              })
+              .catch((error) => {
+                this.api.notifier.show({
+                  message: error.message,
+                  style: 'error',
+                });
+              });
           });
-        });
-    });
   }
   }
   save() {

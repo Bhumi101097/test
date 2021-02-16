@@ -198,10 +198,11 @@ export default class Embed {
 
     this.showProgress();
     try {
-      const response = await axios.get('/meta', {
-        params: { url, type: 'iframely' },
-      });
-      this.onFetch(response);
+      await this.config.fetchData({url, type:'iframely'}).then((response)=>this.onFetch(response));
+      // const response = await axios.get('/meta', {
+      //   params: { url, type: 'iframely' },
+      // });
+      // this.onFetch(response);
     } catch (error) {
       this.fetchingFailed(this.api.i18n.t("Couldn't fetch the link data"));
     }

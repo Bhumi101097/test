@@ -11,14 +11,11 @@ import Marker from '@editorjs/marker';
 import CodeTool from '@editorjs/code';
 import Delimiter from '@editorjs/delimiter';
 import InlineCode from '@editorjs/inline-code';
-// import { useSelector } from 'react-redux';
 import Embed from './Embed';
 
-function Editor({ value, onChange, style, placeholder = 'Begin writing your post...', space_slug, space_id }) {
+function Editor({ value, onChange, style, placeholder = 'Begin writing your post...', space_slug, space_id, restrictions, autoProceed, fetchData }) {
   const editor_block = React.useRef(null);
-//   const space_slug = useSelector((state) => {
-//     return state.spaces.details[state.spaces.selected]?.slug;
-//   });
+
   console.log('base urrl in package',window);
   React.useEffect(() => {
     const editor = new EditorJS({
@@ -53,6 +50,7 @@ function Editor({ value, onChange, style, placeholder = 'Begin writing your post
           class: Embed,
           config: {
             space_id: space_id,
+            fetchData: fetchData,
           }
         },
         uppy: {
@@ -60,6 +58,8 @@ function Editor({ value, onChange, style, placeholder = 'Begin writing your post
           config: {
             space_id: space_id,
             space_slug: space_slug,
+            restrictions : restrictions,
+            autoProceed : autoProceed,
           },
         },
       },
